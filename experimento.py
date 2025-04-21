@@ -32,6 +32,20 @@ def run():
     h1, h2, h3, h4 = net.get('h1', 'h2', 'h3', 'h4')
     s1, s2 = net.get('s1', 's2')
 
+	# configurando htp em s1
+    s1.cmd('tc qdisc add dev s1-eth3 root handle 1: htb default 20')
+    s1.cmd('tc class add dev s1-eth3 parent 1: classid 1:1 htb rate 10mbit')
+    s1.cmd('tc class add dev s1-eth3 parent 1:1 classid 1:10 htb rate 5mbit ceil 10mbit')  # Para RTP
+    s1.cmd('tc class add dev s1-eth3 parent 1:1 classid 1:20 htb rate 2mbit ceil 5mbit')   # Para iperf
+
+	# Filtros (supondo portas RTP 5004 e 5006)
+    s1.cmd('tc filter add dev s1-eth3 protocol ip parent 1:0 prio 1 u32 match ip dport 5004 0xffff flowid 1:10')
+    s1.cmd('tc filter add dev s1-eth3 protocol ip parent 1:0 prio 1 u32 match ip dport 5006 0xffff flowid 1:10')
+
+	# Iperf usa portas altas, pode filtrar por IP ou porta > 1024
+    s1.cmd('tc filter add dev s1-eth3 protocol ip parent 1:0 prio 2 u32 match ip dport 5001 0xffff flowid 1:20')
+
+
     print("Iniciando transmissão RTP de h1 para h2...")
 
     h1.cmd(
