@@ -32,15 +32,6 @@ def run():
     h1, h2, h3, h4 = net.get('h1', 'h2', 'h3', 'h4')
     s1, s2 = net.get('s1', 's2')
 
-	# htp: priorização + garantia de banda mínima e máxima
-    #s1.cmd('tc qdisc add dev s1-eth3 root handle 1: htb default 20')
-    #s1.cmd('tc class add dev s1-eth3 parent 1: classid 1:1 htb rate 10mbit')
-    #s1.cmd('tc class add dev s1-eth3 parent 1:1 classid 1:10 htb rate 6mbit ceil 10mbit')  # Para RTP
-    #s1.cmd('tc class add dev s1-eth3 parent 1:1 classid 1:20 htb rate 2mbit ceil 5mbit')   # Para iperf
-	## Filtros (supondo portas RTP 5004 e 5006)
-    #s1.cmd('tc filter add dev s1-eth3 protocol ip parent 1:0 prio 1 u32 match ip dport 5004 0xffff flowid 1:10')
-    #s1.cmd('tc filter add dev s1-eth3 protocol ip parent 1:0 prio 1 u32 match ip dport 5006 0xffff flowid 1:10')
-
 	# HTB: hierarchical token bucket
 	# da prioridade para o tráfego de vídeo
     s1.cmd('tc qdisc add dev s1-eth3 root handle 1: htb default 30')
@@ -54,6 +45,8 @@ def run():
 	# TBF: Token Bucket Filter
 	# limita rajadas
     #s1.cmd('tc qdisc add dev s1-eth3 root tbf rate 6mbit burst 10kb latency 50ms')
+	# TBF limitando iperf
+    #s1.cmd("tc qdisc add dev s1-eth2 root tbf rate 4mbit burst 32kbit latency 400ms")
 
 	# SQF: Stochastic Fair Queue
 	# filas com tratamento justo
@@ -62,6 +55,23 @@ def run():
 	# Prio: Filas por prioridade
     #s1.cmd('tc qdisc add dev s1-eth3 root handle 1: prio')
     #s1.cmd('tc filter add dev s1-eth3 protocol ip parent 1:0 prio 1 u32 match ip dport 5004 0xffff flowid 1:1')
+
+ 	# QFQ com prioridade
+	# Quick Fair Queueing
+    #s1.cmd("tc qdisc add dev s1-eth3 root handle 1: qfq")
+	## Cria duas classes com pesos diferentes
+    #s1.cmd("tc class add dev s1-eth3 parent 1: classid 1:1 qfq weight 1000")  # vídeo
+    #s1.cmd("tc class add dev s1-eth3 parent 1: classid 1:2 qfq weight 100")   # iperf e resto
+	## Direciona RTP para classe 1:1
+	## O restante (default) vai para 1:2 automaticamente
+    #s1.cmd("tc filter add dev s1-eth3 protocol ip parent 1:0 prio 1 u32 match ip dport 5004 0xffff flowid 1:1")
+
+	# Policing
+	# limitando iperf a 4mbit/s em eth2
+    #s1.cmd("tc qdisc add dev s1-eth2 root handle 1: htb default 20")
+    #s1.cmd("tc class add dev s1-eth2 parent 1: classid 1:10 htb rate 100mbit")  # classe base
+	## Aplica filtro com policiamento na porta de origem UDP do iperf (por padrão é 5001)
+    #s1.cmd("tc filter add dev s1-eth2 protocol ip parent 1: prio 1 u32 match ip sport 5001 0xffff police rate 4mbit burst 10k drop flowid :1")
 
 
 	# Iperf usa portas altas, pode filtrar por IP ou porta > 1024
