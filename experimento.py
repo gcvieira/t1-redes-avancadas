@@ -32,18 +32,27 @@ def run():
     h1, h2, h3, h4 = net.get('h1', 'h2', 'h3', 'h4')
     s1, s2 = net.get('s1', 's2')
 
-	# configurando htp em s1:
-	# priorização + garantia de banda mínima e máxima
-    s1.cmd('tc qdisc add dev s1-eth3 root handle 1: htb default 20')
-    s1.cmd('tc class add dev s1-eth3 parent 1: classid 1:1 htb rate 10mbit')
-    s1.cmd('tc class add dev s1-eth3 parent 1:1 classid 1:10 htb rate 6mbit ceil 10mbit')  # Para RTP
-    s1.cmd('tc class add dev s1-eth3 parent 1:1 classid 1:20 htb rate 2mbit ceil 5mbit')   # Para iperf
-	# Filtros (supondo portas RTP 5004 e 5006)
+	# htp: priorização + garantia de banda mínima e máxima
+    #s1.cmd('tc qdisc add dev s1-eth3 root handle 1: htb default 20')
+    #s1.cmd('tc class add dev s1-eth3 parent 1: classid 1:1 htb rate 10mbit')
+    #s1.cmd('tc class add dev s1-eth3 parent 1:1 classid 1:10 htb rate 6mbit ceil 10mbit')  # Para RTP
+    #s1.cmd('tc class add dev s1-eth3 parent 1:1 classid 1:20 htb rate 2mbit ceil 5mbit')   # Para iperf
+	## Filtros (supondo portas RTP 5004 e 5006)
+    #s1.cmd('tc filter add dev s1-eth3 protocol ip parent 1:0 prio 1 u32 match ip dport 5004 0xffff flowid 1:10')
+    #s1.cmd('tc filter add dev s1-eth3 protocol ip parent 1:0 prio 1 u32 match ip dport 5006 0xffff flowid 1:10')
+
+	# HTB: hierarchical token bucket
+	# da prioridade para o tráfego de vídeo
+    s1.cmd('tc qdisc add dev s1-eth3 root handle 1: htb default 30')
+	# Classe de alta prioridade para vídeo, garantindo 6Mbit
+    s1.cmd('tc class add dev s1-eth3 parent 1: classid 1:10 htb rate 6Mbit ceil 10Mbit prio 0')
+	# Classe de baixa prioridade para o resto (iperf), com até 4Mbit
+    s1.cmd('tc class add dev s1-eth3 parent 1: classid 1:20 htb rate 2Mbit ceil 4Mbit prio 1')
+	# Filtro: identifica tráfego de vídeo pela porta 5004 (troque se for diferente)
     s1.cmd('tc filter add dev s1-eth3 protocol ip parent 1:0 prio 1 u32 match ip dport 5004 0xffff flowid 1:10')
-    s1.cmd('tc filter add dev s1-eth3 protocol ip parent 1:0 prio 1 u32 match ip dport 5006 0xffff flowid 1:10')
 
 	# TBF: Token Bucket Filter
-	# limitar rajadas
+	# limita rajadas
     #s1.cmd('tc qdisc add dev s1-eth3 root tbf rate 6mbit burst 10kb latency 50ms')
 
 	# SQF: Stochastic Fair Queue
