@@ -1,0 +1,5 @@
+sudo killall ovs-testcontroller
+wget https://download.blender.org/durian/trailer/sintel_trailer-480p.mp4 -O video.mp4
+xhost +SI:localuser:root
+sudo python3 experimento.py
+sudo mn -c
