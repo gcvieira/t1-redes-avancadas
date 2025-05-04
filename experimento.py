@@ -7,6 +7,7 @@ from mininet.node import OVSKernelSwitch, DefaultController
 from mininet.log import setLogLevel
 from time import sleep
 import sys
+import os
 
 class RTPTopo(Topo):
     def build(self):
@@ -115,3 +116,4 @@ def run():
 if __name__ == '__main__':
     setLogLevel('info')
     run()
+    os.system('mn -c')
