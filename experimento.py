@@ -103,12 +103,10 @@ def run():
 
     print("Executando experimento por mais 40 segundos...")
     sleep(40)
-
     print("Encerrando monitoramento...")
     monitor.terminate()
-
-    print("Conteúdo do ffplay.log (h2):")
-    print(h2.cmd("cat /tmp/ffplay.log"))
+    #print("Conteúdo do ffplay.log (h2):")
+    #print(h2.cmd("cat /tmp/ffplay.log"))
 
     print("Encerrando rede...")
     net.stop()
